@@ -49,7 +49,7 @@ class PPO:
     self.buffer = Buffer()
     pass
 
-  def to_tensor_buffer(self) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+  def to_tensor_buffer(self) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     """
     Re-format the experience and return a tuple of tensors for states, actions, log_probs, and discounted returns.
 
@@ -59,6 +59,7 @@ class PPO:
     states, actions, log_probs, state_values, rewards, is_done = self.buffer.to_tensor()
 
     states = torch.tensor(np.array(states)).float()
+    state_values = torch.tensor(np.array(state_values)).float()
     actions = torch.tensor(np.array(actions)).float()
     log_probs = torch.tensor(np.array(log_probs)).float()
     is_done = torch.tensor(np.array(is_done)).float()
@@ -76,7 +77,7 @@ class PPO:
 
     discounted_returns = torch.tensor(np.array(discounted_returns)).float()
 
-    return states, actions, log_probs, discounted_returns
+    return states, state_values, actions, log_probs, discounted_returns
 
   def update(self) -> None:
     """
@@ -85,18 +86,18 @@ class PPO:
     Returns:
       None
     """
-    old_states, old_actions, old_log_probs, old_discounted_returns = self.to_tensor_buffer()
+    old_states, old_state_values, old_actions, old_log_probs, old_discounted_returns = self.to_tensor_buffer()
 
     if old_discounted_returns.std() == 0:
       old_discounted_returns = (old_discounted_returns - old_discounted_returns.mean()) / 1e-5
     else:
       old_discounted_returns = (old_discounted_returns - old_discounted_returns.mean()) / old_discounted_returns.std()
 
+    advantages = old_discounted_returns.detach() - old_state_values.detach()
     for epoch in range(self.optimization_steps):
       log_probs, state_values, dist_entropy = self.policy.evaluate(old_states, old_actions)
       ratios = torch.exp(log_probs - old_log_probs)
 
-      advantages = old_discounted_returns - state_values
       min_surrogate = torch.min(
         ratios * advantages,
         torch.clamp(ratios, 1 - self.epsilon_clipping, 1 + self.epsilon_clipping) * advantages
