@@ -14,7 +14,6 @@ class ActorCritic(nn.Module):
     Args:
       state_dims (int): State dimensions for the environment.
       action_dims (int): Action dimensions for the environment.
-      device (str): Device to run the RL algorithm on.
     """
     super(ActorCritic, self).__init__()
 

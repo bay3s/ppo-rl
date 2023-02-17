@@ -70,8 +70,8 @@ class PPO:
       if done:
         ret = 0
 
-      discounted_reward = reward + (self.discount_rate * ret)
-      discounted_returns.insert(0, discounted_reward)
+      ret = reward + (self.discount_rate * ret)
+      discounted_returns.insert(0, ret)
       pass
 
     discounted_returns = torch.tensor(np.array(discounted_returns)).float()
@@ -93,16 +93,16 @@ class PPO:
       old_discounted_returns = (old_discounted_returns - old_discounted_returns.mean()) / old_discounted_returns.std()
 
     for epoch in range(self.optimization_steps):
-      logprobs, state_values, dist_entropy = self.policy.evaluate(old_states, old_actions)
-      ratios = torch.exp(logprobs - old_log_probs.detach())
+      log_probs, state_values, dist_entropy = self.policy.evaluate(old_states, old_actions)
+      ratios = torch.exp(log_probs - old_log_probs)
 
-      advantages = old_discounted_returns - state_values.detach()
+      advantages = old_discounted_returns - state_values
       min_surrogate = torch.min(
         ratios * advantages,
         torch.clamp(ratios, 1 - self.epsilon_clipping, 1 + self.epsilon_clipping) * advantages
       )
 
-      loss = -1 * min_surrogate + 0.5 * self.mse_loss(state_values, old_discounted_returns) - 0.005 * dist_entropy
+      loss = -1 * min_surrogate + 0.5 * self.mse_loss(state_values, old_discounted_returns) - 0.01 * dist_entropy
 
       self.optimizer.zero_grad()
       loss.mean().backward()
