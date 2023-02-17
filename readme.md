@@ -76,7 +76,7 @@ $$L^{K L P E N}(\theta)=\hat{\mathbb{E}}_t\left[\frac{\pi_\theta\left(a_t \mid s
 	- if $d > d_{targ} \times 1.5, \beta \leftarrow \beta / 2$
 
 
-*Practial Implementation Details*
+*Practical Implementation Details*
 - For implementations using a package supporting autodiff, you can simply consturct the loss $L^{CLIP}$ or $L^{KLPEN}$ in place of the policy gradient objective.
 - Techniques for computing the variance-reduced advantage function estimators can also be used in conjunction,
 	- Generalized Advantage Estimators
